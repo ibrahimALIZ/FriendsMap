@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>followme</title>
+
+<link rel="stylesheet" href="css/jquery.mobile-1.3.0.min.css" />
+<link rel="stylesheet" href="css/styles.css" />
+
+<script type="text/javascript"
+	src="http://maps.googleapis.com/maps/api/js?key=AIzaSyD8bgoyIACmdoEzxXprk0uCgjnL86AJzRE&sensor=true"></script>
+<script src="js/jquery-1.8.2.min.js"></script>
+<script type="text/javascript">
+	$(document).bind("mobileinit", function() {
+		$.mobile.defaultPageTransition = "none";
+	});
+</script>
+<script src="js/jquery.mobile-1.3.0.min.js"></script>
+<script src="js/cordova-2.5.0.js"></script>
+
+<script>
+	// Wait for PhoneGap to load 
+	// 
+	document.addEventListener("deviceready", onDeviceReady, false);
+	// PhoneGap is ready 
+	// 
+	function onDeviceReady() {
+		//checkConnection();
+		initializePage();
+		var db = window.openDatabase("Database", "1.0", "followme", 100);
+		db.transaction(populateDB, errorCB, successCB);
+	}
+</script>
+</head>
+
+<body>
+	<!-- Start of page: #friends -->
+	<div data-role="page" id="friends" data-theme="a" class="details-page">
+		<div data-role="header">
+			<h1>
+				<span style="color: white">follow</span><span style="color: red">me</span>
+			</h1>
+			<div id="busyCursor"></div>
+			<a id="refresh_btn" href="#friends" data-icon="refresh"
+				data-iconpos="notext" data-direction="reverse" data-corners="false">Refresh</a>
+			<a id="check_btn" href="#friends" data-icon="check"
+				class="ui-btn-right" data-theme="e" data-inline="true"
+				data-mini="true" data-role="button" data-corners="false">Checkin</a>
+		</div>
+		<!-- /header -->
+
+		<div data-role="content" class="map_content" data-theme="a">
+			<div id="friends_map" class="map_canvas"></div>
+		</div>
+		<!-- /content -->
+
+		<div data-role="footer" data-theme="a">
+			<div data-role="navbar" data-position="fixed" data-iconpos="top">
+				<ul id="friendsBtnList">
+					<li><a id="friends_btn" href="#friends" data-icon="star"
+						data-role="button" data-theme="a">Friends</a>
+					</li>
+					<li><a id="history_btn" href="#friends" data-icon="grid"
+						data-role="button" data-theme="a">History</a>
+					</li>
+					<li><a href="#contacts" data-icon="search" data-role="button">Contacts</a>
+					</li>
+					<li><a id="directions_btn" href="#friends" data-icon="edit"
+						data-role="button">Directions</a>
+					</li>
+					<!--<li><a href="#help" data-icon="info" data-role="button">Info</a></li>-->
+				</ul>
+			</div>
+			<!-- /navbar -->
+		</div>
+	</div>
+	<!-- /page friends -->
+
+	<!-- Start of page: #contacts -->
+	<div data-role="page" id="contacts" data-theme="a"
+		data-add-back-btn="true">
+		<div data-role="header">
+			<h1>Contacts</h1>
+			<a id="info_btn" href="#help" data-icon="info" data-theme="e"
+				data-inline="true" data-mini="true" data-corners="false"
+				class="ui-btn-right" data-theme="b">Info</a>
+		</div>
+		<!-- /header -->
+		<div data-role="content" data-theme="a">
+			<ul id="contactList" data-role="listview" data-filter="true"></ul>
+		</div>
+		<div data-role="content" id="contentProgress" data-theme="a">
+			<div align="center">
+				<h4>Please wait...</h4>
+			</div>
+			<div align="center">
+				<img id="spin" src="css/images/ajax-loader.gif" />
+			</div>
+		</div>
+		<!-- /content -->
+	</div>
+	<!-- /page contacts -->
+
+	<!-- Start of page: #contactdetails-->
+	<div data-role="page" id="contactdetails" data-theme="a"
+		data-add-back-btn="true">
+		<div data-role="header">
+			<h1>Contact Details</h1>
+		</div>
+		<!-- /header -->
+
+		<div data-role="content" data-theme="a">
+			<img id="contactPic" />
+			<div id="contactDetails">
+				<h3 id="displayName"></h3>
+				<p id="phone"></p>
+				<p id="email"></p>
+			</div>
+
+			<ul data-role="listview" data-inset="true">
+				<li><a id="follow_btn" href="#friends"><b>Follow</b> </a>
+				</li>
+				<li><a id="unfollow_btn" href="#friends"><b>Unfollow</b> </a>
+				</li>
+			</ul>
+			<ul data-role="listview" data-theme="e" data-inset="true">
+				<li><a id="invite_btn"
+					href="http://www.facebook.com/sharer.php?u=http%3A%2F%2Falizinhouse.com%2Fwp%2F%3Fp%3D532&t=followme"><b>Share</b>
+				</a>
+				</li>
+			</ul>
+		</div>
+		<!-- /content -->
+	</div>
+	<!-- /page contactdetails -->
+
+	<!-- Start of page: #followrequest -->
+	<div data-role="page" id="followrequest" data-theme="a"
+		data-add-back-btn="true">
+
+		<div data-role="header" data-theme="a">
+			<h1>Follow Requests</h1>
+		</div>
+		<!-- /header -->
+
+		<!-- /header -->
+		<div data-role="content" data-theme="e">
+			<ul id="requestList" data-role="listview" data-filter="true"></ul>
+		</div>
+		<!-- /content -->
+	</div>
+	<!-- /page followrequest -->
+
+	<!-- Start of page: #requestdetails -->
+	<div data-role="page" id="requestdetails" data-theme="a"
+		data-add-back-btn="true">
+		<div data-role="header">
+			<h1>Request Details</h1>
+		</div>
+		<!-- /header -->
+
+		<div data-role="content" data-theme="a">
+			<div>
+				<h3 id="displayName2">User Information</h3>
+				<span id="reqID" style="visibility: hidden; display: none"></span>
+				<p id="phone2"></p>
+				<p id="email2"></p>
+			</div>
+			<ul id="requestBtnList" data-role="listview" data-theme="e"
+				data-inset="true">
+			</ul>
+			<ul data-role="listview" data-inset="true">
+				<li><a id="confirm_btn" href="#friends"><b>Confirm</b> </a>
+				</li>
+				<!-- <li><a id="con_fol_btn" href="#" ><b>Confirm & Follow</b></a></li> -->
+				<li><a id="deny_btn" href="#friends"><b>Deny</b> </a>
+				</li>
+			</ul>
+		</div>
+		<!-- /content -->
+	</div>
+	<!-- /page #requestdetails -->
+
+	<!-- Start of page: #register -->
+	<div data-role="page" id="register">
+
+		<div data-role="header" data-theme="e">
+			<h1>Register</h1>
+		</div>
+		<!-- /header -->
+
+		<div data-role="content" data-theme="d">
+			<form id="registerForm">
+				Email <input id="email_ti" type="text" name="email" /><br /> Phone
+				Number <input id="phonenumber_ti" type="text" name="phoneNumber" /><br />
+			</form>
+			<p>
+				<a id="register_btn" href="#" data-role="button">Register</a>
+			</p>
+			This information is important if you would like to be discovered by
+			your friends.
+		</div>
+		<!-- /content -->
+	</div>
+	<!-- /page register -->
+
+
+	<!-- Start of page: #help -->
+	<div data-role="page" id="help" data-add-back-btn="true" data-theme="a">
+
+		<div data-role="header" data-theme="a">
+			<h1>
+				<span style="color: white">follow</span><span style="color: red">me</span>
+			</h1>
+		</div>
+		<!-- /header -->
+
+		<div data-role="content" data-theme="a">
+			<h3>Registration Information</h3>
+
+			<form id="registerForm">
+				Email <input id="email_u_ti" type="text" name="email" /><br />
+				Phone Number <input id="phonenumber_u_ti" type="text"
+					name="phoneNumber" /><br />
+			</form>
+			<p>
+				<a id="update_btn" href="#" data-role="button" data-theme="b">Update</a>
+			</p>
+
+			<h4>Here are a few important words to mention</h4>
+
+			<p align="justify">First of all correctness of the provided
+				information by you on this page is important if you would like to be
+				discovered by your friends.</p>
+
+			<p align="justify">
+				<span style="color: white">follow</span><span style="color: red">me</span>
+				creates a network between you and your contacts based on your mobile
+				number. When you send a follow request to a contact, your friend
+				receives a confirmation note with your registered information. When
+				he/she confirms your request you will be able to see his/her
+				location on friends tab.
+			</p>
+			<p align="justify">
+				When you <span style="color: yellow"><b>checkin</b> </span> at a
+				time <span style="color: white">follow</span><span
+					style="color: red">me</span> stores and shares your location
+				information with the people whom you have confirmed their follow
+				requests.
+			</p>
+
+			<p align="justify">You can find all your points of location
+				history with their checkin dates on history tab.</p>
+
+			<p align="justify">
+				And as last words, <span style="color: white">follow</span><span
+					style="color: red">me</span> never stores and shares your location
+				information unless you <span style="color: yellow"><b>checkin</b>
+				</span>.
+			</p>
+
+			<h4>
+				<span style="color: white">ALIZ</span> <span style="color: red">in
+					House</span>
+			</h4>
+
+		</div>
+		<!-- /content -->
+	</div>
+	<!-- /page help -->
+
+	<!-- Start scripting -->
+	<script src="js/kunduz.js"></script>
+
+	<script type="text/javascript">
+		$('#confirm_btn').click(function() {
+			var reqID = $('#reqID').text();
+
+			if (reqID.length > 0) {
+				$.post("http://www.alizinhouse.com/ps.php", {
+					v : 'c',
+					id : reqID,
+					s : 1
+				}, function(resp) {
+					alert(resp);
+				});
+			}
+		});
+
+		$('#deny_btn').click(function() {
+			var reqID = $('#reqID').text();
+
+			if (reqID.length > 0) {
+				$.post("http://www.alizinhouse.com/ps.php", {
+					v : 'c',
+					id : reqID,
+					s : 2
+				}, function(resp) {
+					alert(resp);
+				});
+			}
+		});
+
+		$('#follow_btn').click(function() {
+			//var email = $('#email').text();
+			var phoneNumber = $('#phone').text();
+			if (phoneNumber.length > 0) {
+				$.post("http://www.alizinhouse.com/ps.php", {
+					v : 'f',
+					pn : phoneNumber,
+					ud : userid
+				}, function(resp) {
+					alert(resp);
+				});
+			}
+		});
+
+		$('#invite_btn').click(function() {
+			/*var phoneNumber = $('#phone').text();
+			var messagetext = "Hey! Do you know about this great app? Just take a look at www.alizinhouse.com";
+
+			window.location.href = "sms:" + phoneNumber + "?body=" + messagetext;*/
+		});
+
+		$('#unfollow_btn').click(function() {
+			var phoneNumber = $('#phone').text();
+			if (phoneNumber.length > 0) {
+				$.post("http://www.alizinhouse.com/ps.php", {
+					v : 'u',
+					pn : phoneNumber,
+					ud : userid
+				}, function(resp) {
+					alert(resp);
+				});
+			}
+		});
+
+		$('#register_btn').click(
+				function() {
+					var email = $('#email_ti').val();
+					var phoneNumber = $('#phonenumber_ti').val();
+					if (email.length > 0 && phoneNumber.length > 0) {
+						$.post("http://www.alizinhouse.com/ps.php", {
+							v : 'r',
+							pn : phoneNumber,
+							em : email,
+							ud : device.uuid
+						}, function(y) {
+							userid = y;
+							userMsisdn = phoneNumber;
+							userMail = email;
+							var db = window.openDatabase("Database", "1.0",
+									"followme", 100);
+							db.transaction(insertDB, errorCB);
+							$.mobile.changePage("#friends", {
+								transition : "slideup"
+							});
+						});
+					} else {
+						alert("Please fill the form in order to register.");
+					}
+				});
+
+		$('#update_btn')
+				.click(
+						function() {
+							var email = $('#email_u_ti').val();
+							var phoneNumber = $('#phonenumber_u_ti').val();
+
+							if (email.length > 0 && phoneNumber.length > 0) {
+								$.post("http://www.alizinhouse.com/ps.php", {
+									v : 'up',
+									pn : phoneNumber,
+									em : email,
+									ud : userid
+								}, function(jsontext) {
+									if (jsontext != null) {
+										userMail = jsontext.email;
+										userMsisdn = jsontext.msisdn;
+										// alert ("user " + userMail + " " + userMsisdn);
+									}
+									$.mobile.changePage("#friends", {
+										transition : "slideup"
+									});
+								});
+							} else {
+								alert("Please fill the form in order to update register information.");
+							}
+						});
+
+		$('#refresh_btn').click(refreshMap);
+		$('#history_btn').click(showUserHistory);
+		$('#friends_btn').click(showFriends);
+		$('#directions_btn').click(
+				function() {
+					if (showDirections) {
+						showDirections = false;
+						alert("Directions mode Off!");
+						directionsDisplay.setMap(null);
+					} else {
+						showDirections = true;
+						// Create a renderer for directions and bind it to the map.
+						var rendererOptions = {
+							map : map
+						}
+						directionsDisplay = new google.maps.DirectionsRenderer(
+								rendererOptions);
+
+						alert("Directions mode On!");
+					}
+				});
+
+		$('#check_btn')
+				.click(
+						function() {
+							$("#busyCursor")
+									.html(
+											'<img src="css/images/ajax-loader.gif">&#160;&#160;&#160;&#160;&#160;&#160;&#160;Sending...');
+							if (checkinEnabled) {
+								checkinEnabled = false;
+								$
+										.post(
+												"http://alizinhouse.com/ps.php",
+												{
+													v : 'p',
+													ud : userid,
+													latitude : currentPosition.latitude,
+													longitude : currentPosition.longitude,
+													date : currentDate
+												},
+												function(x) {
+													if (x) {
+														alert("Published location information.");
+													} else {
+														alert("Could not publish! Check your connection.");
+													}
+													$("#busyCursor").html('');
+													checkinEnabled = true;
+												});
+							}
+						});
+	</script>
+</body>
+</html>
